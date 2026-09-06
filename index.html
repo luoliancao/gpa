@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="18" fill="%232b6cb0"/><rect x="18" y="52" width="18" height="34" rx="5" fill="white"/><rect x="42" y="38" width="18" height="48" rx="5" fill="white"/><rect x="66" y="22" width="18" height="64" rx="5" fill="white"/></svg>'>
+<title>绩点计算器</title>
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :root{ --bg:#eef1f6; --card:#fff; --text:#2c3e50; --muted:#7f8c8d; --line:#dde3ea; --input:#f7f9fb; --result:#f2f6fb; }
+  body.dark{ --bg:#151a24; --card:#20262f; --text:#e6e9ee; --muted:#93a0b0; --line:#343c49; --input:#2a313d; --result:#28303c; }
+  body { margin:0; font-family:-apple-system,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+         background:var(--bg); color:var(--text); }
+  .wrap { max-width:600px; margin:0 auto; padding:12px 12px 40px; }
+  header { background:linear-gradient(135deg,#2b6cb0,#4a90d9); color:#fff; border-radius:14px;
+           padding:14px 16px; margin-bottom:12px; position:relative; }
+  header h1 { margin:0; font-size:19px; } header small { opacity:.85; font-size:11px; }
+  #themeBtn { position:absolute; right:12px; top:12px; background:rgba(255,255,255,.18); color:#fff;
+              border:none; padding:6px 10px; border-radius:9px; font-size:12px; cursor:pointer; }
+  .card { background:var(--card); border-radius:14px; padding:12px; margin-bottom:12px;
+          box-shadow:0 1px 4px rgba(0,0,0,.08); }
+  .card h2 { margin:0 0 10px; font-size:15px; }
+  .semseg { display:flex; gap:8px; margin-bottom:12px; overflow-x:auto; padding-bottom:2px; }
+  .semseg button { white-space:nowrap; padding:10px 14px; border:none; border-radius:10px; background:#dbe3ec;
+                   color:#3a4a5a; font-size:13px; font-weight:600; }
+  .semseg button.on { background:#2b6cb0; color:#fff; }
+  .semseg button.add { background:#fff3cd; color:#9a6700; }
+  .seg { display:flex; gap:8px; margin-bottom:10px; }
+  .seg button { flex:1; padding:11px 0; border:none; border-radius:10px; background:#dbe3ec;
+                color:#3a4a5a; font-size:14px; font-weight:600; }
+  .seg button.on { background:#2b6cb0; color:#fff; }
+  .infield { display:flex; gap:8px; margin-bottom:8px; flex-wrap:nowrap; }
+  .infield input { flex:1; min-width:0; padding:11px 10px; border:1px solid var(--line); border-radius:10px;
+                   font-size:14px; background:var(--input); color:var(--text); }
+  .infield input.w1{flex:0 0 25%;} .infield input.w2{flex:0 0 19%;}
+  textarea { width:100%; min-height:80px; border:1px solid var(--line); border-radius:10px; background:var(--input);
+             color:var(--text); padding:8px; font-size:13px; box-sizing:border-box; }
+  .btn { display:block; width:100%; padding:12px 0; border:none; border-radius:10px;
+         background:#2b6cb0; color:#fff; font-size:14px; font-weight:700; }
+  .btn.blue{background:#2b6cb0;} .btn.green{background:#1e8449;} .btn.gray{background:#7f8c8d;}
+  .btnrow{display:flex;gap:8px;} .btnrow .btn{flex:1;padding:11px 0;font-size:13px;}
+  .pillrow{display:flex;gap:8px;margin-bottom:8px;}
+  .pillrow button{flex:1;padding:10px 0;border:none;border-radius:9px;background:#dbe3ec;color:#3a4a5a;font-size:13px;font-weight:600;}
+  .pillrow button.on{background:#2b6cb0;color:#fff;}
+  .sumcards{display:flex;gap:8px;margin-bottom:12px;}
+  .sum{background:var(--card);border-radius:12px;padding:10px;flex:1;text-align:center;position:relative;}
+  .sum::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:12px 0 0 12px;}
+  .sum small{display:block;color:var(--muted);font-size:11px;margin-bottom:4px;}
+  .sum b{font-size:18px;color:#2b6cb0;}
+  .sum.g1::before{background:#2b6cb0;} .sum.g2::before{background:#9aa5b1;}
+  .sum.g3::before{background:#7fb3e0;} .sum.g4::before{background:#e67e22;}
+  .course{background:var(--card);border-radius:12px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  .course.ex{opacity:.75;} .course .info{flex:1;min-width:0;}
+  .course .nm{font-weight:700;font-size:14px;}
+  .course .meta{font-size:12px;color:var(--muted);margin-top:2px;}
+  .course .score{font-size:18px;font-weight:800;}
+  .tier{font-weight:700;font-size:13px;}
+  .ops{display:flex;gap:4px;flex-wrap:wrap;}
+  .ops button{border:none;font-size:11px;padding:8px 6px;border-radius:8px;cursor:pointer;background:var(--result);color:var(--text);}
+  .ops .ex{background:#fdf3d7;color:#9a6700;} .ops .del{color:#c0392b;background:#fdecea;}
+  .badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:8px;background:#dfe4ea;color:#5a6b7b;margin-left:6px;}
+  .badge.ex{background:#fdf3d7;color:#9a6700;} .badge.type{background:#e7f0fb;color:#2b6cb0;}
+  .t-good{color:#1a7f37;} .t-bad{color:#9a6700;} .t-pass{color:#bc4c00;} .t-fail{color:#d93025;} .t-pend{color:#8a97a5;}
+  .critical{color:#b8860b;font-weight:600;}
+  .hint{font-size:12px;color:var(--muted);margin:6px 0 0;} .note{font-size:12px;color:#b8860b;margin-top:2px;}
+  .result{background:var(--result);border-radius:10px;padding:10px;margin-top:10px;font-size:13px;white-space:pre-wrap;line-height:1.6;}
+  .chk{display:flex;align-items:center;gap:6px;font-size:13px;margin:6px 0 8px;color:var(--text);}
+  .chkline{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:9px;background:var(--input);margin-bottom:6px;font-size:13px;cursor:pointer;}
+  .chkline .box{width:22px;height:22px;border-radius:6px;border:2px solid #c6cfda;flex:0 0 22px;text-align:center;line-height:22px;font-size:14px;color:#fff;}
+  .chkline.on .box{background:#1e8449;border-color:#1e8449;}
+  .cat{font-size:13px;color:var(--text);padding:8px 4px;} .cat b{color:#2b6cb0;}
+  .footer{text-align:center;color:var(--muted);font-size:12px;margin-top:20px;}
+  body.dark .sum b{color:#7fb3e0;}
+  body.dark .tier{color:#e6e9ee;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>🐳 绩点计算器</h1><small>北京信息职业技术学院标准 · 免修不计入绩点</small>
+    <button id="themeBtn">🌙 深色</button></header>
+
+  <div class="semseg" id="semSeg"></div>
+
+  <div class="seg" id="scaleSeg">
+    <button data-k="school" class="on">学校4.5</button><button data-k="five">5分制</button><button data-k="four">4分制</button>
+  </div>
+
+  <div class="card">
+    <h2>➕ 添加课程（本学期）</h2>
+    <div class="infield">
+      <input id="addName" placeholder="课程名"><input id="addCredit" class="w1" type="number" min="0" placeholder="学分"><input id="addScore" class="w2" type="number" min="0" max="100" placeholder="分数">
+    </div>
+    <div class="pillrow">
+      <button id="typeReq" class="on" onclick="addType='req';paintType()">📘 必修</button>
+      <button id="typeElec" onclick="addType='elec';paintType()">📗 选修</button>
+      <button class="btn blue" style="flex:1.6;" onclick="addCourse()">添加</button>
+    </div>
+    <p class="hint">双击/点课程上的「分数」即可填分；未填分/免修不计入绩点。</p>
+  </div>
+
+  <div class="sumcards">
+    <div class="sum g1"><small>本学期绩点</small><b id="sumGpa">--</b></div>
+    <div class="sum g2"><small>计入学分</small><b id="sumCredit">0</b></div>
+    <div class="sum g3"><small>已填/免修</small><b id="sumFilled">0</b></div>
+    <div class="sum g4"><small>诊断</small><b id="sumDiag" style="font-size:11px;">--</b></div>
+  </div>
+  <label class="chk" style="margin:2px 0 8px;"><input type="checkbox" id="catToggle"> 📊 分开统计必修/选修</label>
+  <div class="cat" id="catStat"></div>
+  <div id="list"></div>
+
+  <div class="card"><h2>📈 绩点趋势（各学期）</h2><div id="trend"></div></div>
+
+  <div class="card">
+    <h2>🎯 目标试算</h2>
+    <div class="infield"><input id="tgt" type="number" step="0.1" min="0" placeholder="目标绩点"><input id="rem" type="number" step="1" min="1" placeholder="剩余学分"></div>
+    <button class="btn blue" onclick="calcTarget()">计算目标分</button><div class="result" id="tgtOut"></div>
+  </div>
+
+  <div class="card">
+    <h2>🎓 评优自测（三好/干部）</h2>
+    <div class="infield"><input id="conduct" type="number" min="0" max="100" placeholder="操行分"><input id="hours" type="number" min="0" placeholder="志愿小时"></div>
+    <div class="infield">
+      <button class="btn gray" id="dorm1" style="flex:1;background:#dbe3ec;color:#3a4a5a;" onclick="setDorm(1)">🏠 住宿优秀</button>
+      <button class="btn gray" id="dorm0" style="flex:1;background:#dbe3ec;color:#3a4a5a;" onclick="setDorm(0)">🏠 非优秀</button>
+    </div>
+    <label class="chk"><input type="checkbox" id="gradTerm"> 毕业班（评优不参评）</label>
+    <button class="btn blue" onclick="calcEval()">判断评优</button><div class="result" id="evalOut"></div>
+  </div>
+
+  <div class="card">
+    <h2>🏫 专升本预测</h2>
+    <div class="infield"><input id="zbEng" type="number" min="0" max="100" placeholder="校考英语"><input id="zbAcad" type="number" min="0" max="100" placeholder="学业平均分"></div>
+    <div class="infield"><input id="zbConduct" type="number" min="0" max="100" placeholder="操行综合"><input id="zbBonus" type="number" step="0.1" placeholder="特殊贡献加分"></div>
+    <button class="btn green" onclick="calcZB()">算专升总分</button><div class="result" id="zbOut"></div>
+    <p class="hint">总分=英语×50%+学业×30%+操行×20%+加分；推荐比例约同专业15%，大数据对接北京联合大学。</p>
+  </div>
+
+  <div class="card">
+    <h2>🎓 毕业条件清单</h2>
+    <div class="chkline" id="gReqPass"><span class="box"></span> 必修课全部通过</div>
+    <div class="chkline" id="gElecOK"><span class="box"></span> 选修学分达本学制要求（三年制≥20/二年制≥14）</div>
+    <div class="chkline" id="gSuzhi"><span class="box"></span> 素质学分达标（三年制≥20/3+2贯通≥12）</div>
+    <div class="result" id="gradOut"></div>
+  </div>
+
+  <div class="card">
+    <h2>📥 导入课表 / 备份</h2>
+    <textarea id="importBox" placeholder="粘贴：每行「课程名,学分」（也兼容课表文本）。例如：&#10;公共英语1,4&#10;Python编程基础,4"></textarea>
+    <div class="btnrow" style="margin-top:8px;">
+      <button class="btn blue" onclick="importSem()">导入为新学期</button>
+      <button class="btn gray" onclick="backupJSON()">备份</button>
+      <button class="btn green" onclick="restoreJSON()">恢复</button>
+    </div>
+    <p class="hint">备份=下载全部数据JSON；恢复=粘贴/上传JSON。演示可用左上角➕ 新建学期。</p>
+  </div>
+
+  <div class="card">
+    <h2>💾 导出</h2>
+    <div class="btnrow">
+      <button class="btn green" onclick="copyCSV()">复制结果</button>
+      <button class="btn blue" onclick="downloadXls()">导出Excel(带色)</button>
+      <button class="btn gray" onclick="downloadCSV()">CSV</button>
+    </div>
+  </div>
+
+  <p class="footer">免费离线工具 · 数据仅存本机浏览器</p>
+</div>
+
+<script>
+var TC={"优秀":"#1a7f37","良好":"#1f883d","中等":"#9a6700","及格":"#bc4c00","不及格":"#d93025"};
+var SCALES={school:function(s){return s>=90?4.5:s>=80?3.5:s>=70?2.5:s>=60?1.5:0;},
+  five:function(s){return s>=60?Math.round((s-50)/10*100)/100:0;},
+  four:function(s){return s>=90?4:s>=85?3.7:s>=82?3.3:s>=78?3:s>=75?2.7:s>=72?2.3:s>=68?2:s>=64?1.5:s>=60?1:0;}};
+function tierOf(s){return s>=90?"优秀":s>=80?"良好":s>=70?"中等":s>=60?"及格":"不及格";}
+function noteOf(s){if(s===89)return"⚠差1分到优秀";if(s===79)return"⚠差1分到良好";if(s===69)return"⚠差1分到中等";if(s===59)return"⚠差1分到及格";return"";}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function isGraded(c){return !c.exempt && c.score!=null;}
+
+var K="gpa_web_v6";
+function defaultSem(){return {name:"2026-2027-1",courses:[
+  {name:"公共英语1",credit:4,score:null,exempt:false,type:"req"},
+  {name:"Python编程基础",credit:4,score:null,exempt:false,type:"req"},
+  {name:"Linux操作系统",credit:4,score:null,exempt:false,type:"req"},
+  {name:"计算机网络技术概论",credit:2,score:null,exempt:false,type:"req"},
+  {name:"体育1",credit:2,score:null,exempt:false,type:"req"},
+  {name:"大学生美育",credit:2,score:null,exempt:false,type:"elec"},
+  {name:"思想道德与法治1",credit:1.5,score:null,exempt:false,type:"req"},
+  {name:"劳动教育实践",credit:1,score:null,exempt:false,type:"req"},
+  {name:"形势与政策1",credit:0.5,score:null,exempt:false,type:"req"}]};}
+var data=load()||{semesters:[defaultSem()],cur:0,showCat:false,theme:"light"};
+var cur=Math.min(parseInt(data.cur||0),Math.max(0,data.semesters.length-1));
+var showCat=!!data.showCat, theme=data.theme||"light";
+var scale="school", dorm=0, addType="req";
+function sem(){return data.semesters[cur];}
+function cs(){return sem().courses;}
+function semYear(s){var m=(s.name||"").match(/(\d{4})-(\d{4})/);return m?m[1]+"-"+m[2]:(s.name||"");}
+function yearSemesters(y){return data.semesters.filter(function(s){return semYear(s)===y;});}
+function yearGraded(){var y=semYear(sem()),out=[];yearSemesters(y).forEach(function(s){s.courses.forEach(function(c){if(isGraded(c))out.push(c);});});return out;}
+function load(){try{return JSON.parse(localStorage.getItem(K));}catch(e){return null;}}
+function save(){try{data.cur=cur;data.showCat=showCat;data.theme=theme;localStorage.setItem(K,JSON.stringify(data));}catch(e){}}
+var grad={reqPass:false,elecOK:false,suzhi:false};
+function gsave(){try{localStorage.setItem("gpa_grad",JSON.stringify(grad));}catch(e){}}
+(function(){try{var g=JSON.parse(localStorage.getItem("gpa_grad"));if(g)grad=g;}catch(e){}})();
+
+function gpaFunc(){return SCALES[scale];}
+function graded(){return cs().filter(isGraded);}
+
+// 学期
+function renderSem(){
+  var h="";data.semesters.forEach(function(s,i){h+='<button class="'+(i===cur?'on':'')+'" onclick="goSem('+i+')">'+esc(s.name)+'</button>';});
+  h+='<button class="add" onclick="addSem()">＋ 新增学期</button>';
+  document.getElementById("semSeg").innerHTML=h;
+}
+function goSem(i){cur=i;save();render();}
+function addSem(){var n=prompt("新学期名称（如 2026-2027-2）：","2026-2027-2");if(n===null)return;n=n.trim()||("学期"+(data.semesters.length+1));
+  data.semesters.push({name:n,courses:[]});cur=data.semesters.length-1;save();render();}
+
+document.getElementById("themeBtn").addEventListener("click",function(){theme=theme==="light"?"dark":"light";applyTheme();save();});
+function applyTheme(){document.body.classList.toggle("dark",theme==="dark");document.getElementById("themeBtn").textContent=theme==="dark"?"☀️ 浅色":"🌙 深色";}
+document.getElementById("scaleSeg").addEventListener("click",function(e){var k=e.target.getAttribute("data-k");if(!k)return;scale=k;
+  document.querySelectorAll("#scaleSeg button").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-k")===k);});render();});
+function paintType(){document.getElementById("typeReq").classList.toggle("on",addType==="req");document.getElementById("typeElec").classList.toggle("on",addType==="elec");}
+
+function addCourse(){
+  var n=document.getElementById("addName").value.trim()||"课程";
+  var cr=parseFloat(document.getElementById("addCredit").value),s=parseFloat(document.getElementById("addScore").value);
+  if(isNaN(cr)||cr<=0){alert("学分需大于0");return;}
+  if(!isNaN(s)&&(s<0||s>100)){alert("分数需在0~100");return;}
+  cs().push({name:n,credit:cr,score:isNaN(s)?null:s,exempt:false,type:addType});
+  ["addName","addCredit","addScore"].forEach(function(id){document.getElementById(id).value="";});
+  save();render();
+}
+function setScore(i){var c=cs()[i];if(c.exempt){alert("免修课程不参与绩点，如需参与请点「参与」");return;}
+  var s=prompt("请输入「"+c.name+"」的分数(0~100)：",c.score==null?"":c.score);if(s===null)return;s=parseFloat(s);
+  if(isNaN(s)||s<0||s>100){alert("请输入0~100");return;}c.score=s;save();render();}
+function toggleExempt(i){var c=cs()[i];c.exempt=!c.exempt;save();render();}
+function toggleType(i){var c=cs()[i];c.type=c.type==="req"?"elec":"req";save();render();}
+function fullEdit(i){var c=cs()[i];
+  var n=prompt("课程名：",c.name);if(n===null)return;n=n.trim()||c.name;
+  var cr=prompt("学分：",c.credit);if(cr===null)return;cr=parseFloat(cr);if(isNaN(cr)||cr<=0){alert("学分需>0");return;}
+  var ex=prompt("是否免修(y免修/n参与)：",c.exempt?"y":"n");var exempt=false;if(ex!==null&&String(ex).trim().toLowerCase()==="y")exempt=true;
+  var ty=prompt("类型(1必修/2选修)：",c.type==="req"?"1":"2");var type=(ty!==null&&String(ty).trim()==="2")?"elec":"req";
+  var sc=c.score;
+  if(!exempt){var s=prompt("分数(0~100，可留空)：",c.score==null?"":c.score);
+    if(s!==null&&s.trim()!==""){s=parseFloat(s);if(isNaN(s)||s<0||s>100){alert("分数需0~100");return;}sc=s;}else sc=null;}
+  c.name=n;c.credit=cr;c.exempt=exempt;c.type=type;c.score=exempt?null:sc;save();render();}
+function del(i){cs().splice(i,1);save();render();}
+
+// 图表
+function distArr(){var d={优秀:0,良好:0,中等:0,及格:0,不及格:0};graded().forEach(function(c){d[tierOf(c.score)]++;});return d;}
+function chartHTML(){var d=distArr(),tiers=["优秀","良好","中等","及格","不及格"],max=Math.max(1,tiers.reduce(function(m,t){return Math.max(m,d[t]||0);},0));
+  return tiers.map(function(t){var v=d[t]||0,w=Math.round(v/max*220);
+    return '<div style="margin:5px 0;display:flex;align-items:center;gap:8px;"><span style="width:46px;font-size:13px;color:var(--muted);">'+t+'</span>'+
+    '<svg width="230" height="20"><rect width="220" height="16" rx="4" fill="var(--result)"/><rect width="'+w+'" height="16" rx="4" fill="'+TC[t]+'"/><text x="'+(w+6)+'" y="13" font-size="12" fill="var(--text)">'+v+'</text></svg></div>';}).join("");}
+function semGpa(s){var gf=gpaFunc(),g=s.courses.filter(isGraded),t=0,w=0;g.forEach(function(c){t+=c.credit;w+=gf(c.score)*c.credit;});return t?{gpa:w/t,t:t}:{gpa:0,t:0};}
+function trendHTML(){
+  var pts=data.semesters.map(function(s){return semGpa(s);});
+  var html="";
+  if(data.semesters.length<=1){html='<div class="hint">只记录了一个学期，新增学期后这里会显示绩点趋势折线。</div>';}
+  else{
+    var W=520,H=150,pad=34;var n=pts.length;var maxG=Math.max(4.6,Math.ceil(Math.max.apply(null,pts.map(function(p){return p.gpa;}))*10)/10);
+    var xStep=(W-2*pad)/Math.max(1,n-1);
+    var coords=pts.map(function(p,i){var x=pad+i*xStep,y=H-pad-(p.gpa/maxG)*(H-2*pad);return x+","+y;});
+    var line=coords.join(" ");
+    var dots=pts.map(function(p,i){var x=pad+i*xStep,y=H-pad-(p.gpa/maxG)*(H-2*pad);
+      return '<circle cx="'+x+'" cy="'+y+'" r="4" fill="#2b6cb0"/><text x="'+x+'" y="'+(y-8)+'" font-size="11" fill="var(--text)">'+p.gpa.toFixed(2)+'</text><text x="'+x+'" y="'+(H-pad+16)+'" font-size="11" fill="var(--muted)">'+(data.semesters[i].name.length>6?data.semesters[i].name.slice(0,6):data.semesters[i].name)+'</text>';}).join("");
+    html='<svg width="100%" viewBox="0 0 '+W+' '+H+'"><line x1="'+pad+'" y1="'+(H-pad)+'" x2="'+(W-pad)+'" y2="'+(H-pad)+'" stroke="var(--line)"/>'+
+      '<polyline points="'+line+'" fill="none" stroke="#2b6cb0" stroke-width="2.5"/>'+dots+'</svg>';
+  }
+  document.getElementById("trend").innerHTML=html;
+}
+function catStat(){var gf=gpaFunc(),gd=graded();
+  function stat(type){var sub=gd.filter(function(c){return c.type===type;}),t=0,w=0;sub.forEach(function(c){t+=c.credit;w+=gf(c.score)*c.credit;});return{t:t,g:t?w/t:0,n:sub.length};}
+  var r=stat("req"),e=stat("elec");
+  return "📘 必修：绩点 "+(r.n?r.g.toFixed(2):"--")+" / 学分 "+r.t+"（"+r.n+"门）｜📗 选修：绩点 "+(e.n?e.g.toFixed(2):"--")+" / 学分 "+e.t+"（"+e.n+"门）";}
+
+function render(){
+  var gf=gpaFunc(),gd=graded(),tot=0,weighted=0;
+  gd.forEach(function(c){tot+=c.credit;weighted+=gf(c.score)*c.credit;});var gpa=tot?weighted/tot:0;
+  var exN=cs().filter(function(c){return c.exempt;}).length;
+  document.getElementById("sumGpa").textContent=gd.length?gpa.toFixed(2):"--";
+  document.getElementById("sumCredit").textContent=tot;
+  document.getElementById("sumFilled").textContent=gd.length+(exN?"/免"+exN:"")+"/"+cs().length;
+  var dist=distArr(),crit=gd.filter(function(c){return noteOf(c.score);}).length,diag="",dk="";
+  if(gd.length===0){diag="待填分";dk="t-pend";}else if(crit>0){diag="临界"+crit+"门";dk="critical";}
+  else if(dist.不及格>0){diag="有不及格";dk="t-fail";}else if(gpa>=3.4){diag="达三好线";dk="t-good";}
+  else if(gpa>=3.2){diag="达干部线";dk="t-good";}else diag="良好";
+  var se=document.getElementById("sumDiag");se.textContent=diag;
+  se.style.color=dk==="t-good"?"#1a7f37":dk==="t-fail"?"#d93025":dk==="critical"?"#b8860b":dk==="t-pend"?"#8a97a5":"#2b6cb0";
+  var cs2=document.getElementById("catStat");
+  if(showCat){cs2.style.display="";cs2.textContent=catStat();}else{cs2.style.display="none";cs2.textContent="";}
+  document.getElementById("list").innerHTML=listHTML();renderSem();trendHTML();
+}
+function listHTML(){
+  var gf=gpaFunc(),html="";
+  cs().forEach(function(c,i){
+    var right,note="",badge='<span class="badge type">'+(c.type==="req"?"必修":"选修")+'</span>';
+    if(c.exempt){right='<div class="score t-pend">免修</div><div class="tier t-pend">不参与绩点</div>';badge+='<span class="badge ex">免修</span>';note='<div class="note">不计入绩点，计毕业学分</div>';}
+    else if(c.score==null){right='<div class="score t-pend">待填</div>';note='<div class="note">点「分数」填分</div>';}
+    else{var tc=tierOf(c.score),tg=gf(c.score);
+      right='<div><div class="score" style="color:'+TC[tc]+'">'+c.score+'</div><div class="tier t-'+{优秀:"good",良好:"good",中等:"bad",及格:"pass",不及格:"fail"}[tc]+'">'+tc+' · '+tg.toFixed(2)+'</div></div>';
+      note=noteOf(c.score)?'<div class="note">'+noteOf(c.score)+'</div>':"";}
+    html+='<div class="course '+(c.exempt?"ex":"")+'"><div class="info"><div class="nm">'+esc(c.name)+badge+'</div><div class="meta">学分 '+c.credit+'</div>'+note+'</div>'+right+
+      '<div class="ops">'+(c.exempt?'<button class="ex" onclick="toggleExempt('+i+')">参与</button>':'<button onclick="toggleExempt('+i+')">免修</button>')+
+      '<button onclick="toggleType('+i+')">'+(c.type==="req"?"选":"必")+'</button><button onclick="setScore('+i+')">分数</button><button onclick="fullEdit('+i+')">编辑</button><button class="del" onclick="del('+i+')">删</button></div></div>';
+  });
+  if(!cs().length)return '<div class="card" style="text-align:center;color:var(--muted);">本学期的课还没添加，可用「＋新增学期」或「导入课表」</div>';
+  return html;
+}
+
+function calcTarget(){
+  var gf=gpaFunc(),gd=graded();if(!gd.length){document.getElementById("tgtOut").textContent="请先填非免修课程分数。";return;}
+  var tot=0,w=0;gd.forEach(function(c){tot+=c.credit;w+=gf(c.score)*c.credit;});var gpa=w/tot;
+  var t=parseFloat(document.getElementById("tgt").value),r=parseFloat(document.getElementById("rem").value)||20;
+  if(isNaN(t)){document.getElementById("tgtOut").textContent="请输入目标绩点。";return;}
+  var need=t*(tot+r)-w;
+  if(need<=0){document.getElementById("tgtOut").textContent="🎉 当前 "+gpa.toFixed(2)+" 已达标。";return;}
+  if(scale==="five"){var s=50+10*need/r;document.getElementById("tgtOut").textContent=(s>100?"⚠ 目标过高/学分太少":"📌 未来"+r+"学分平均需考约 "+s.toFixed(1)+" 分");return;}
+  var ns=null;for(var x=0;x<=100;x++){if((w+r*gf(x))/(tot+r)>=t){ns=x;break;}}
+  document.getElementById("tgtOut").textContent=ns==null?"⚠ 全考100也不够":"📌 未来"+r+"学分平均至少要考 "+ns+" 分。";
+}
+function setDorm(v){dorm=v;function p(el,on){el.style.background=on?"#2b6cb0":"#dbe3ec";el.style.color=on?"#fff":"#3a4a5a";}p(document.getElementById("dorm1"),v===1);p(document.getElementById("dorm0"),v===0);}
+function calcEval(){
+  var gf=gpaFunc(),gd=yearGraded();               /* 评优按"学年"绩点：合并同一学年的所有学期 */
+  var yr=semYear(sem());
+  if(document.getElementById("gradTerm").checked){document.getElementById("evalOut").textContent="📌 毕业班不参评奖学金/三好/优秀干部。\n绩点仍可作参考。";return;}
+  if(!gd.length){document.getElementById("evalOut").textContent="请先填好本学年("+yr+")非免修课程分数。";return;}
+  var t=0,w=0;gd.forEach(function(c){t+=c.credit;w+=gf(c.score)*c.credit;});var gpa=w/t;
+  var con=parseFloat(document.getElementById("conduct").value),hr=parseFloat(document.getElementById("hours").value);
+  if(isNaN(con)||isNaN(hr)){document.getElementById("evalOut").textContent="请填写操行分数和志愿小时。";return;}
+  var sh=["绩点≥3.4",gpa>=3.4,"操行≥90",con>=90,"志愿≥30h",hr>=30,"优秀住宿",dorm===1];
+  var gb=["绩点≥3.2",gpa>=3.2,"操行≥90",con>=90,"志愿≥40h",hr>=40,"优秀住宿",dorm===1];
+  var sm=[],bm=[];for(var i=0;i<sh.length;i+=2){if(!sh[i+1])sm.push(sh[i]);}for(var j=0;j<gb.length;j+=2){if(!gb[j+1])bm.push(gb[j]);}
+  document.getElementById("evalOut").textContent="学年("+yr+")绩点 "+gpa.toFixed(2)+"｜操行 "+con+"｜志愿 "+hr+"｜住宿 "+(dorm?"优秀":"非优秀")+"\n三好学生："+(sm.length?"✗ 差 "+sm.join("、"):"✅ 全部达标 🎉")+"\n优秀干部："+(bm.length?"✗ 差 "+bm.join("、"):"✅ 全部达标 🎉");
+}
+function calcZB(){var e=parseFloat(document.getElementById("zbEng").value),a=parseFloat(document.getElementById("zbAcad").value),c=parseFloat(document.getElementById("zbConduct").value),b=parseFloat(document.getElementById("zbBonus").value)||0;
+  if(isNaN(e)||isNaN(a)||isNaN(c)){document.getElementById("zbOut").textContent="请填写英语、学业平均分、操行综合(0~100)。";return;}
+  var total=e*0.5+a*0.3+c*0.2+b;
+  document.getElementById("zbOut").textContent="总分 = "+total.toFixed(2)+"\n（英语 "+e+"×50% + 学业 "+a+"×30% + 操行 "+c+"×20% + 加分 "+b+"）";}
+function paintChk(el,val){el.className="chkline"+(val?" on":"");el.querySelector(".box").textContent=val?"✓":"";}
+function renderGrad(){paintChk(document.getElementById("gReqPass"),grad.reqPass);paintChk(document.getElementById("gElecOK"),grad.elecOK);paintChk(document.getElementById("gSuzhi"),grad.suzhi);
+  var miss=[];if(!grad.reqPass)miss.push("必修未全过");if(!grad.elecOK)miss.push("选修学分未达标");if(!grad.suzhi)miss.push("素质学分未达标");
+  document.getElementById("gradOut").textContent=(!miss.length)?"✅ 毕业条件全部达成！🎉":"✗ 尚有："+miss.join("、");}
+["gReqPass","gElecOK","gSuzhi"].forEach(function(id,idx){var key=["reqPass","elecOK","suzhi"][idx];
+  document.getElementById(id).addEventListener("click",function(){grad[key]=!grad[key];gsave();renderGrad();});});
+
+// 导入 / 备份 / 恢复
+function parseImport(txt){
+  var out=[],seen={};
+  txt.split(/\r?\n/).forEach(function(line){
+    line=line.trim();if(!line)return;
+    var c=line.match(/^[^,，;；]+[，,;；][^,，;；]+$/);
+    if(c){var p=line.split(/[，,;；]/),nm=p[0].trim(),cr=parseFloat(p[1]);if(nm&&cr>0&&!seen[nm]){out.push({name:nm,credit:cr,score:null,exempt:false,type:"req"});seen[nm]=true;}return;}
+    var m=line.match(/([^★●\s]+?)\s*[★●]?\s*周数[\s\S]*?学分[:：]\s*(\d+\.?\d*)/);
+    if(m){var nm2=m[1].trim(),cr2=parseFloat(m[2]);if(nm2&&cr2>0&&!seen[nm2]){out.push({name:nm2,credit:cr2,score:null,exempt:false,type:"req"});seen[nm2]=true;}}
+  });
+  return out;
+}
+function importSem(){
+  var txt=document.getElementById("importBox").value;
+  if(!txt.trim()){alert("请先粘贴课表/课程数据。");return;}
+  var arr=parseImport(txt);
+  if(!arr.length){alert("没解析出课程。请用「课程名,学分」每行一条。");return;}
+  var n=prompt("这个新学期叫什么（如 2026-2027-2）：","导入学期");if(n===null)return;
+  data.semesters.push({name:n.trim()||"导入学期",courses:arr});cur=data.semesters.length-1;save();render();
+  document.getElementById("importBox").value="";
+}
+function backupJSON(){var blob=new Blob([JSON.stringify(data)],{type:"application/json"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="绩点数据备份.json";document.body.appendChild(a);a.click();document.body.removeChild(a);}
+function restoreJSON(){
+  var t=prompt("粘贴之前备份的 JSON 内容：");if(!t)return;
+  try{var d=JSON.parse(t);if(!d.semesters||!d.semesters.length||!d.semesters[0].courses)throw 0;data=d;cur=0;showCat=!!data.showCat;theme=data.theme||"light";applyTheme();save();render();alert("已恢复。");}
+  catch(e){alert("JSON 无效，恢复失败。");}
+}
+
+// 导出
+function csvData(){
+  var gf=gpaFunc(),gd=graded(),t=0,w=0;gd.forEach(function(c){t+=c.credit;w+=gf(c.score)*c.credit;});var gpa=t?w/t:0;
+  var arr=[["课程","类型","学分","分数","等级","绩点","备注"]];
+  cs().forEach(function(c){
+    if(c.exempt){arr.push([c.name,c.type==="req"?"必修":"选修",c.credit,"","免修","","不参与绩点"]);return;}
+    if(c.score==null){arr.push([c.name,c.type==="req"?"必修":"选修",c.credit,"","","","待填"]);return;}
+    var tc=tierOf(c.score);arr.push([c.name,c.type==="req"?"必修":"选修",c.credit,c.score,tc,gf(c.score).toFixed(2),noteOf(c.score)]);
+  });
+  arr.push([]);arr.push(["本学期","",t,"","平均学分绩点",gpa.toFixed(2),sem().name]);
+  return {arr:arr,gpa:gpa};
+}
+function csvText(){var d=csvData();return d.arr.map(function(r){return r.map(function(c){var s=String(c==null?"":c);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}).join(",");}).join("\n");}
+function copyCSV(){var txt="\ufeff"+csvText();function ok(){alert("已复制，可直接粘贴！");}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(ok).catch(function(){fb(txt,ok);});}else fb(txt,ok);}
+function fb(txt,ok){var ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity=0;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");ok();}catch(e){alert("复制失败，请手动长按复制");}document.body.removeChild(ta);}
+function downloadCSV(){var blob=new Blob(["\ufeff"+csvText()],{type:"text/csv;charset=utf-8"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="成绩单.csv";document.body.appendChild(a);a.click();document.body.removeChild(a);}
+function downloadXls(){var d=csvData(),rows=d.arr,html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><style>td{font-size:13px;}.h{background:#2b6cb0;color:#fff;font-weight:bold;}</style></head><body><table border="1">';
+  rows.forEach(function(r){html+="<tr>";r.forEach(function(c,ci){html+=ci===0?'<td class="h">'+c+"</td>":'<td>'+c+"</td>";});html+="</tr>";});
+  html+="</table></body></html>";var blob=new Blob(["\ufeff"+html],{type:"application/vnd.ms-excel"});
+  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="成绩单.xls";document.body.appendChild(a);a.click();document.body.removeChild(a);}
+
+document.getElementById("catToggle").addEventListener("change",function(e){showCat=e.target.checked;save();render();});
+applyTheme();renderGrad();render();paintType();
+</script>
+</body>
+</html>
